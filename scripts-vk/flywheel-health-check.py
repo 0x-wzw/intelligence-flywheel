@@ -125,7 +125,13 @@ def scan_raw_items() -> Tuple[List[Dict[str, Any]], List[tuple]]:
         created = get_file_date(fm, 'created')
         status = fm.get('status', 'unknown')
         
-        if created and created < cutoff and status != 'processed':
+        # Closed = the capture has been consumed or promoted. Schema v2 terminal
+        # states: `archived` (consumed by the daily intelligence loop or aged
+        # out) and `shipped` (verified + promoted by the RAG ingest harness /
+        # wiki_promote). The old check compared against `processed`, which is
+        # not even in Schema v2's six-value vocabulary — so nothing could ever
+        # legitimately leave the backlog and the count only ever grew.
+        if created and created < cutoff and status not in ('archived', 'shipped'):
             old_items.append({
                 'file': str(md_file.relative_to(raw_dir)),
                 'created': fm.get('created', 'unknown'),
@@ -151,13 +157,18 @@ def scan_raw_items() -> Tuple[List[Dict[str, Any]], List[tuple]]:
     
     return old_items, external_raw
 
-def scan_reports() -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
-    """Find reports shipped but not distilled."""
+def scan_reports() -> Tuple[List[Dict[str, Any]], int]:
+    """Find reports shipped but not distilled (recurring series excluded).
+
+    Returns (not_distilled, recurring_count) — the recurring count is surfaced
+    in the report so the exclusion stays visible, not silent.
+    """
     reports_dir = VAULT_PATH / "Knowledge" / "20-Reports"
     not_distilled: List[Dict[str, Any]] = []
+    recurring_count = 0
     
     if not reports_dir.exists():
-        return not_distilled
+        return not_distilled, recurring_count
     
     for md_file in reports_dir.glob("*.md"):
         if md_file.name.startswith("_"):
@@ -173,9 +184,18 @@ def scan_reports() -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
             continue
         
         status = fm.get('status', 'draft')
-        distilled = fm.get('distilled', 'false')
+        distilled = str(fm.get('distilled', 'false')).lower()
         
-        if status == 'shipped' and str(distilled).lower() == 'false':
+        # Recurring series (daily briefs, weekly signal-noise / loop-improvement /
+        # bias-balance) are consumed by their own downstream loops — loop-tuner
+        # digests them weekly; no per-report distillation step exists. Requiring
+        # distilled:true on them made the tracker report a permanent RED that
+        # meant nothing. They carry `recurring: daily|weekly` in frontmatter.
+        recurring = str(fm.get('recurring', '')).lower() in ('daily', 'weekly', 'n/a')
+        if recurring and status == 'shipped':
+            recurring_count += 1
+        
+        if status == 'shipped' and distilled == 'false' and not recurring:
             created = get_file_date(fm, 'created')
             not_distilled.append({
                 'file': md_file.name,
@@ -184,7 +204,7 @@ def scan_reports() -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
                 'days_since_shipped': (datetime.now() - created).days if created else 'unknown'
             })
     
-    return not_distilled
+    return not_distilled, recurring_count
 
 def scan_wiki_pages() -> List[Dict[str, Any]]:
     """Find wiki pages not reviewed >90 days."""
@@ -516,6 +536,7 @@ def _orphan_section(orphans: Optional[Dict[str, Any]]) -> str:
 
     count = orphans.get("orphan_count", 0)
     total = orphans.get("total", 0)
+    skipped = orphans.get("skipped_machine_managed", 0)
     unresolved_total = orphans.get("unresolved_total", 0)
     orphan_list = orphans.get("orphans", [])
 
@@ -524,6 +545,15 @@ def _orphan_section(orphans: Optional[Dict[str, Any]]) -> str:
         f"**{unresolved_total} unresolved link targets.**",
         "",
     ]
+    if skipped:
+        lines += [
+            f"*Excluded from the orphan count: {skipped} machine-managed files "
+            "(Daily journal, System/Backups cron output, Inbox staging, Notion "
+            "mirrors, handoffs, gartner-docs staging, agent skills/logs). Their "
+            "navigation lives outside the link graph — calendar, upstream Notion, "
+            "the embedding workflow, or the canonical copies they mirror.*",
+            "",
+        ]
 
     if count:
         by_dir: Dict[str, int] = {}
@@ -624,7 +654,7 @@ def _bias_section(bias: Optional[Dict[str, Any]]) -> str:
 def generate_report() -> str:
     """Generate the full health check report."""
     raw_items, external_raw = scan_raw_items()
-    not_distilled = scan_reports()
+    not_distilled, recurring_reports = scan_reports()
     aging_wiki = scan_wiki_pages()
     intel_jobs = scan_intelligence_jobs()
     bias = read_latest_bias_score()
@@ -706,6 +736,8 @@ filtering that out is correct behaviour on a rerun or a quiet weekend.
 
 **Action:** Extract best practices and workflows to [[Knowledge/30-Distilled/_index|30-Distilled]]. Set `distilled: true` when done.
 
+*Excluded from this check: {recurring_reports} recurring-series reports (daily briefs, weekly signal-noise / loop-improvement / bias-balance). They are consumed by their own downstream loops (loop-tuner, flywheel §0) — no per-report distillation step applies. See `recurring:` frontmatter.*
+
 ---
 
 ## 3. Wiki Pages Not Reviewed >90 Days
@@ -758,7 +790,7 @@ def main():
     
     print(f"Flywheel health check complete: {output_file}")
     print(f"  - Raw items >30 days: {len(scan_raw_items()[0])}")
-    print(f"  - Reports not distilled: {len(scan_reports())}")
+    print(f"  - Reports not distilled: {len(scan_reports()[0])} (+{scan_reports()[1]} recurring excluded)")
     print(f"  - Wiki pages >90 days: {len(scan_wiki_pages())}")
 
 if __name__ == "__main__":

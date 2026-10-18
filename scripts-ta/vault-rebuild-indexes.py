@@ -104,6 +104,10 @@ def entry(relpath, with_desc=True):
 def listdir_md(reldir, recursive=False):
     base = os.path.join(VAULT, reldir)
     out = []
+    if not os.path.isdir(base):
+        # Folder legitimately absent (e.g. 10-Wikis archived on 2026-10-10):
+        # an empty listing is the correct index contribution.
+        return out
     if recursive:
         for root, dirs, files in os.walk(base):
             dirs.sort()
@@ -304,7 +308,8 @@ tags: [knowledge, index, claude-code]
 > health check, written to `System/_generated/flywheel-health-<date>.md`.
 >
 > Start a new note from [[Knowledge/_Scaffolds/Raw Capture|Knowledge/_Scaffolds/]] —
-> the scaffolds already emit conforming frontmatter.
+> the scaffolds emit the core frontmatter (add `category`/`slug`/`timestamp`
+> when you instantiate, per the contract table in Schema v2).
 
 > [!warning] Generated file — do not hand-edit
 > Rebuilt daily by `~/.hermes/scripts/vault-rebuild-indexes.py` from what is on
@@ -326,8 +331,10 @@ flowchart LR
     Distilled --> Templates[40-Templates]
 ```
 
-The wiki tier is [[System/Wiki/index|System/Wiki]] itself — `10-Wikis/` holds only
-pre-promotion drafts. A staging copy left beside a promoted page forks the wiki.
+The wiki tier is [[System/Wiki/index|System/Wiki]] itself. `Knowledge/10-Wikis/`
+(the pre-promotion staging folder) was archived on 2026-10-10 to
+`System/Wiki/_archive/10-Wikis-prepromotion-2026-07-26/` — author wiki pages
+directly in `System/Wiki/`.
 
 ## 20-Reports — Dated Outputs
 
@@ -342,9 +349,6 @@ pre-promotion drafts. A staging copy left beside a promoted page forks the wiki.
 
     parts.append("\n\n## _Scaffolds — Note Starters\n\n")
     parts.append("\n".join(entry(f) for f in listdir_md("Knowledge/_Scaffolds")))
-
-    parts.append("\n\n## 10-Wikis — Pre-Promotion Drafts\n\n")
-    parts.append("\n".join(entry(f) for f in listdir_md("Knowledge/10-Wikis")))
 
     parts.append("\n\n## 00-Raw — Capture\n\n")
     parts.append(

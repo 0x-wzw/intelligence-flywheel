@@ -25,10 +25,10 @@ RAW = VAULT / "Knowledge" / "00-Raw"
 
 # The four OODA bot profiles (each a clone of strategist, role-defined in SOUL.md)
 BOTS = {
-    "observe": "ooda-observe",
-    "orient": "ooda-orient",
-    "decide": "ooda-decide",
-    "act": "ooda-act",
+    "observe": "radar",
+    "orient": "analyst",
+    "decide": "warroom",
+    "act": "strike",
 }
 
 # How to invoke a bot: hermes -p <bot> chat -c "Bot Chat" -Q -q "<message>"

@@ -158,6 +158,34 @@ def excluded(parts):
     return parts[0] in EXCLUDE_DIRS
 
 
+# Notion exports come in two object classes with different recovery paths:
+#   - a dated PAGE  -> has a real `created_at`; recoverable via the Notion API.
+#   - a DATABASE / workspace snapshot -> no single creation date of its own;
+#     recovery needs a parent-page walk. These are a bounded, known queue, so
+#     they must not share the CRITICAL channel with genuinely-lost pages.
+# Shape signals: explicit `type: database`, the `_all` export suffix, a bare
+# Notion UUID filename, or the synthetic `database<hash>` name.
+_NOTION_UUID_RE = re.compile(r"[0-9a-f]{32}")
+_NOTION_DB_SUFFIX_RE = re.compile(r"(_all|^database[0-9a-f]{6,})", re.I)
+
+
+def _is_notion_database_export(rel, fm):
+    """True when a synced Notion export is a DATABASE/workspace object rather
+    than a dated page — i.e. the undateable state is structural, not a loss."""
+    t = fm.get("type", "").strip().strip("\"'").lower()
+    if t == "database":
+        return True
+    name = Path(rel).stem
+    if name.endswith("_all"):
+        return True
+    if _NOTION_DB_SUFFIX_RE.search(name):
+        return True
+    # A filename that is nothing but a 32-hex Notion id.
+    if _NOTION_UUID_RE.fullmatch(name):
+        return True
+    return False
+
+
 def main():
     findings = defaultdict(list)
     total = 0
@@ -197,9 +225,20 @@ def main():
         # bucket instead, so the number stays actionable and the backlog stays
         # visible. (Until 2026-07-26 these carried `created` copied from the
         # export timestamp, which looked precise and was wrong.)
+        #
+        # Notion DATABASE / workspace exports (`type: database`, or the `_all` /
+        # bare-UUID / `database<hash>` filename shapes) are a different object
+        # class from a dated page: they have no single `created_at` to recover
+        # without walking to a parent page, so they are counted as
+        # `notion_residue` (a bounded, known queue) and kept OUT of the
+        # `undateable_imports` CRITICAL channel — otherwise a known object class
+        # fires CRITICAL every week forever and drowns the real signal.
         if "created" in missing and fm.get("synced"):
             missing.remove("created")
-            findings["undateable_imports"].append(rel)
+            if _is_notion_database_export(rel, fm):
+                findings["notion_residue"].append(rel)
+            else:
+                findings["undateable_imports"].append(rel)
         if not rel.startswith(DOMAIN_EXEMPT_PREFIXES) and not fm.get("domain"):
             missing.append("domain")
         if rel.startswith(STATUS_SCOPE) and not fm.get("status"):
@@ -291,6 +330,7 @@ def main():
         "no_frontmatter": len(findings["no_frontmatter"]),
         "no_tags": len(findings["no_tags"]),
         "undateable_imports": len(findings["undateable_imports"]),
+        "notion_residue": len(findings["notion_residue"]),
         "type_path_mismatch": len(findings["type_path_mismatch"]),
         "domain_override": len(findings["domain_override"]),
         "missing_required": len(findings["missing_required"]),

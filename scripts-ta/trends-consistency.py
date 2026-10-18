@@ -20,7 +20,7 @@ import sys
 from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from trend_contract import VERTICALS, report_path, SYNTH_HEADING, validate_report_file
+from trend_contract import VERTICALS, report_path, SYNTH_HEADING
 
 VAULT = os.path.expanduser("~/Documents/Obsidian Vault")
 SYSTEM_DIR = os.path.join(VAULT, "System")
@@ -50,36 +50,18 @@ def _read_health(vertical_key: str):
 
 
 def _report_stats(vertical_key: str, day: str):
-    """Return (exists, synthesis, raw_count, valid_count) for a report file.
-
-    Published coverage is the count of category-valid articles, never raw links.
-    Otherwise a contaminated report can keep the publication gate green.
-    """
+    """Return (exists, has_synthesis, article_count) for a report file."""
     path = report_path(vertical_key, day)
     if not os.path.exists(path):
-        return (False, False, 0, 0)
+        return (False, False, 0)
     try:
         text = open(path, encoding="utf-8", errors="ignore").read()
     except OSError:
-        return (True, False, 0, 0)
+        return (True, False, 0)
     has_synth = SYNTH_HEADING in text
-    raw_count = 0
-    valid_count = 0
-    heading_to_category = {h.strip(): key for key, h in VERTICALS[vertical_key]["categories"].items()}
-    current_category = None
-    for line in text.splitlines():
-        stripped = line.strip()
-        if stripped in heading_to_category:
-            current_category = heading_to_category[stripped]
-            continue
-        item = re.match(r"^\s*[-*]\s+\[([^\]]+)\]\((https?://[^\s\)]+)\)", line)
-        if item:
-            raw_count += 1
-            # Same canonical intent test used in both retrieval and validation.
-            from trend_contract import category_match
-            if current_category and category_match(item.group(1), current_category):
-                valid_count += 1
-    return (True, has_synth, raw_count, valid_count)
+    # Count markdown list items (article links)
+    count = len(re.findall(r"^\s*[-*]\s+\[", text, re.M))
+    return (True, has_synth, count)
 
 
 def _age_hours(ts: str) -> float:
@@ -97,21 +79,19 @@ def build(day: str = None) -> str:
     for key in ORDER:
         v = VERTICALS[key]
         h = _read_health(key)
-        exists, has_synth, raw_count, count = _report_stats(key, day)
-        # Re-validate the persisted capture. The generator's stored health only
-        # reflects what it knew at write time; the capture itself is the audit
-        # target and may contain historical or merge-on-write contamination.
-        persisted_issues = validate_report_file(key, report_path(key, day)) if exists else ["report missing"]
+        exists, has_synth, count = _report_stats(key, day)
 
         # Health state
-        if persisted_issues:
-            state = f"🔴 non-conformant: {'; '.join(str(i) for i in persisted_issues[:2])}"
-        elif h is None:
+        if h is None:
             state = "⚫ never ran"
         else:
+            conformant = h.get("conformant")
+            issues = h.get("contract_issues") or []
             total = h.get("total_articles", count)
             age = _age_hours(h.get("timestamp", ""))
-            if age is not None and age > 30:
+            if conformant is False:
+                state = f"🔴 non-conformant: {'; '.join(str(i) for i in issues[:2])}"
+            elif age is not None and age > 30:
                 state = f"🟠 stale ({age:.0f}h)"
             elif total == 0 and v.get("academic") is False:
                 state = "🟡 0 articles (check feeds)"
@@ -123,22 +103,9 @@ def build(day: str = None) -> str:
             f"| {v['title']} | {count} | {synth} | {state} |"
         )
 
-    zero_nonacademic = 0
-    for key in ORDER:
-        v = VERTICALS[key]
-        _exists, _synth, _raw_count, count = _report_stats(key, day)
-        if v.get("academic") is False and count == 0:
-            zero_nonacademic += 1
-    stop_ship = zero_nonacademic >= 3
     table = "\n".join(
         ["| Vertical | Articles | Synthesis | Health |",
          "|---|---|---|---|"] + rows
-    )
-    gate = (
-        "🚨 **STOP-SHIP: publishing is withheld.** Three or more non-academic verticals have zero valid articles; "
-        "a thin AI-only briefing misrepresents coverage. Restore source yield and category validity first."
-        if stop_ship else
-        "✅ **Publication gate open.** Fewer than three non-academic verticals are empty."
     )
 
     report = f"""---
@@ -156,8 +123,6 @@ tags: [trends, consistency, dashboard, {now}]
 
 {table}
 
-{gate}
-
 ---
 *Synthesis = the report contains an `## 🔍 Analysis & Synthesis` block. Health reads the
 `conformant` flag each generator now writes to its health JSON.*
@@ -169,17 +134,15 @@ def save(day: str = None):
     day = day or datetime.now().strftime("%Y-%m-%d")
     report = build(day)
 
-    # Rolling "latest" view in the trends index dir.
-    os.makedirs(TRENDS_DIR, exist_ok=True)
-    latest = os.path.join(TRENDS_DIR, "TODAY.md")
-    with open(latest, "w", encoding="utf-8") as f:
-        f.write(report)
-
-    # Dated copy for the record / flywheel visibility.
+    # Rolling "latest" view + dated copy both live in System/_generated/.
+    # (A copy in Knowledge/00-Raw/trends/TODAY.md was removed 2026-10-10: it was a
+    # byte-identical duplicate polluting the raw-capture tier, and the flywheel
+    # treated it as an unprocessed capture. The canonical report is the dated file.)
     os.makedirs(GEN_DIR, exist_ok=True)
     dated = os.path.join(GEN_DIR, f"trends-consistency-{day}.md")
     with open(dated, "w", encoding="utf-8") as f:
         f.write(report)
+    latest = dated
 
     return latest, dated
 

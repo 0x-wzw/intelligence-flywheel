@@ -219,6 +219,9 @@ def generate_report(data: Dict[str, Any]) -> Tuple[str, Dict[str, Any]]:
         status="shipped",
         extra={
             "distilled": "false",
+            # Weekly epistemics check; surfaced in flywheel §0b. Excluded from
+            # distillation backlogs on this key.
+            "recurring": "weekly",
             "sources": "Knowledge/00-Raw weekly captures",
             "overall_diversity_score": overall,
             "clusters_analysed": len(rows),

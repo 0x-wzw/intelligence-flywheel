@@ -18,10 +18,15 @@ set -uo pipefail
 export PYTHONPATH=/Users/admin
 export PATH=/usr/local/bin:/usr/bin:/bin
 export HOME=/Users/admin
-# Ollama is launchd-managed on this host; the server needs it reachable for
-# embeddings. Do not point this at a remote Ollama — the index was built with
-# nomic-embed-text at 768 dims and a different model means a full rebuild.
-export OLLAMA_HOST=127.0.0.1:11434
+# All inference (embeddings + chat) goes through the Ilmu API. The key lives in
+# ~/.hermes/.env (ILMU_API_KEY) — source it if not already in the environment.
+if [ -z "${ILMU_API_KEY:-}" ] && [ -z "${HERMES_ILMU_KEY:-}" ]; then
+    while IFS= read -r line; do
+        case "$line" in
+            ILMU_API_KEY=*) export ILMU_API_KEY="${line#ILMU_API_KEY=}" ;;
+        esac
+    done < /Users/admin/.hermes/.env
+fi
 
 cd /tmp || exit 1   # git/python getcwd must not start in a TCC-protected dir
 

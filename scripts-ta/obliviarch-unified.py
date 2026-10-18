@@ -228,9 +228,21 @@ def sync_archetypes_to_wiki(obliviarch_data: dict) -> None:
         activation = arch.get("activation_count", 0)
         description = arch.get("description", "")
 
-        content = f"""---
+        # ── Mutation guard: only write when something real changed.
+        # (This job previously rewrote every archetype page daily, bumping
+        # `created:` to today — which corrupted the schema's "created = when
+        # conceived" semantics and produced 5-8 pointless vault commits/night.
+        # `created` must come from the archetype's true origin; `updated`
+        # refreshes only when the body actually changes.)
+        true_created = (
+            datetime.fromtimestamp(arch["created_at"]).strftime("%Y-%m-%d")
+            if arch.get("created_at")
+            else date.today().isoformat()
+        )
+        activation_count = arch.get("activation_count", 0)
+        new_content = f"""---
 title: Obliviarch Archetype: {name}
-created: {date.today()}
+created: {true_created}
 updated: {date.today()}
 type: entity
 tags: [obliviarch, archetype, memory, compression]
@@ -240,13 +252,13 @@ confidence: high
 # Obliviarch Archetype: {name}
 
 **Pattern:** `{pattern}`
-**Activations:** {activation}
+**Activations:** {activation_count}
 **Description:** {description}
 
 ## Details
 
 - **Archetype ID:** `{arch.get('archetype_id', '?')}`
-- **Created:** {datetime.fromtimestamp(arch.get('created_at', 0)).strftime('%Y-%m-%d') if arch.get('created_at') else '?'}
+- **Created:** {true_created}
 - **Last activated:** {datetime.fromtimestamp(arch.get('last_activated', 0)).strftime('%Y-%m-%d %H:%M') if arch.get('last_activated') else '?'}
 - **Cold storage:** {arch.get('cold', False)}
 
@@ -256,7 +268,30 @@ confidence: high
 - [[concepts/llm-wiki-pattern|LLM Wiki Pattern]]
 - [[concepts/obsidian-vault-integration|Obsidian Vault Integration]]
 """
-        filepath.write_text(content)
+        if filepath.exists():
+            try:
+                old_fm = filepath.read_text(encoding="utf-8")
+                old_created = re.search(r"^created:\s*(\S+)", old_fm, re.M)
+                if old_created:
+                    true_created = old_created.group(1)
+                    new_content = re.sub(
+                        r"^created:\s*\S+", f"created: {true_created}", new_content, count=1, flags=re.M
+                    )
+                    new_content = new_content.replace(
+                        f"- **Created:** {date.today().isoformat()}",
+                        f"- **Created:** {true_created}",
+                    )
+            except OSError:
+                pass
+            try:
+                old_body = filepath.read_text(encoding="utf-8")
+            except OSError:
+                old_body = ""
+            # Compare ignoring the `updated:` line: identical bodies = no-op.
+            norm = lambda s: re.sub(r"^updated:.*$", "updated: X", s, flags=re.M)
+            if norm(old_body) == norm(new_content):
+                continue  # nothing changed — don't touch the file
+        filepath.write_text(new_content)
         stats["archetypes_synced"] += 1
 
     # Create overview page
@@ -316,7 +351,28 @@ Daily at 6:00 AM via cron:
 - [[concepts/llm-wiki-pattern|LLM Wiki Pattern]]
 - [[concepts/obsidian-vault-integration|Obsidian Vault Integration]]
 """
-    overview_path.write_text(overview)
+    # ── Mutation guard for the overview page (same rule as archetype pages):
+    # preserve the on-disk `created:`, skip the write when nothing but
+    # `updated:` would change.
+    overview_out = overview
+    if overview_path.exists():
+        try:
+            old_text = overview_path.read_text(encoding="utf-8")
+            old_created = re.search(r"^created:\s*(\S+)", old_text, re.M)
+            if old_created:
+                overview_out = re.sub(
+                    r"^created:\s*\S+",
+                    f"created: {old_created.group(1)}",
+                    overview,
+                    count=1,
+                    flags=re.M,
+                )
+            norm = lambda s: re.sub(r"^updated:.*$", "updated: X", s, flags=re.M)
+            if norm(old_text) == norm(overview_out):
+                return  # no real change — don't touch the file
+        except OSError:
+            pass
+    overview_path.write_text(overview_out)
     stats["wiki_pages_updated"] += 1
 
 

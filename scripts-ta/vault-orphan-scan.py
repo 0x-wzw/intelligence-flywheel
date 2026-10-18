@@ -6,6 +6,38 @@ VAULT = "/Users/admin/Documents/Obsidian Vault"
 SKIP_DIRS = {".obsidian", ".trash", ".git", ".smart-env", "node_modules",
              "_generated"}  # machine-written reports are not orphans
 
+# ── Skip rules (2026-10-08 orphan-metric calibration) ────────────────────────
+# The raw scanner counted machine-managed material as orphans, inflating the
+# flywheel's orphan row (249 → 503 in one week purely from cron-output
+# accumulation). Skipped classes, each with its reason:
+SKIP_TREE_PREFIXES = (
+    "System/Backups/",                      # machine archive snapshots (cron output, dated backups)
+    "Daily/",                               # calendar-navigated journal; consumed by vault-learn, never backlinked
+    "Inbox/",                               # intake staging — unprocessed IS the expected state there
+    "handoffs/",                            # deliverables, consumed via the vault-handoff embedding workflow
+    "Knowledge/30-Distilled/gartner-docs/", # pre-promotion staging; each has a System/Wiki twin
+    "System/Assistant/logs/",               # append-only machine logs
+    "System/Assistant/skills/",             # agent infrastructure, consumed by the skill loader
+)
+SKIP_DIR_NAMES = {"_Scaffolds"}             # templates, consumed by the creation flow
+SKIP_NAME_CONTAINS = ("handoff",)           # deliverable handoffs at any depth (RAG-embedded)
+NOTION_ID = re.compile(r"^notion_id:", re.M)  # Notion-synced mirrors: their hub is upstream Notion
+
+def _skipped(rel, text_head):
+    parts = rel.split("/")
+    if any(part in SKIP_DIR_NAMES for part in parts[:-1]):
+        return True
+    if rel.startswith(SKIP_TREE_PREFIXES):
+        return True
+    base = parts[-1]
+    if base.startswith("_"):                # machine index files (_INDEX.md etc.)
+        return True
+    if any(s in base.lower() for s in SKIP_NAME_CONTAINS):
+        return True
+    if NOTION_ID.search(text_head):
+        return True
+    return False
+
 files = []
 for root, dirs, fnames in os.walk(VAULT):
     dirs[:] = [d for d in dirs if d not in SKIP_DIRS]
@@ -75,9 +107,23 @@ for f in files:
         elif not r:
             unresolved[t].append(f)
 
-orphans = sorted(f for f in files if not incoming[f])
+skipped_count = 0
+orphans = []
+for f in sorted(files):
+    p = os.path.join(VAULT, f)
+    try:
+        with open(p, encoding="utf-8", errors="ignore") as fh:
+            text_head = fh.read(800)
+    except Exception:
+        text_head = ""
+    if _skipped(f, text_head):
+        skipped_count += 1
+        continue
+    if not incoming[f]:
+        orphans.append(f)
 print(json.dumps({
     "total": len(files),
+    "skipped_machine_managed": skipped_count,
     "orphans": orphans,
     "orphan_count": len(orphans),
     "unresolved_top": sorted(((len(v), k) for k, v in unresolved.items()), reverse=True)[:40],

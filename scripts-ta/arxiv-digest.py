@@ -184,8 +184,15 @@ def is_fresh(paper: Dict[str, Any], days: int = LOOKBACK_DAYS) -> bool:
     return dt >= datetime.now(timezone.utc) - timedelta(days=days)
 
 
-def collect() -> Tuple[List[Dict[str, Any]], Dict[str, str], int]:
-    """Fetch, filter, dedupe and score papers across all categories."""
+def collect() -> Tuple[List[Dict[str, Any]], Dict[str, str], int, SeenStore]:
+    """Fetch, filter, dedupe and score papers across all categories.
+
+    Returns the SeenStore un-saved: the caller must persist it only after the
+    report is on disk. (Marking items seen before the write meant a failed or
+    demoted run permanently swallowed those papers — the 2026-10-10 04:30 run
+    burned the day's papers into the seen store and then produced a 0-item
+    report, so no rerun could ever recover them.)
+    """
     seen = SeenStore(SEEN_FILE, ttl_days=180)
     errors: Dict[str, str] = {}
     papers: List[Dict[str, Any]] = []
@@ -212,11 +219,11 @@ def collect() -> Tuple[List[Dict[str, Any]], Dict[str, str], int]:
             seen.add(p["title"], p["url"])
             papers.append(score_paper(p))
 
-    seen.save()
+    # NOTE: seen.save() moved to main() — only after the report lands on disk.
     # Highest score first; ties broken by recency.
     papers.sort(key=lambda p: (-p["score"], p["published"]), reverse=False)
     papers.sort(key=lambda p: -p["score"])
-    return papers, errors, attempted, raw_fetched
+    return papers, errors, attempted, raw_fetched, seen
 
 
 def render_paper(p: Dict[str, Any], index: int) -> str:
@@ -349,11 +356,71 @@ def main():
     print(f"Starting arXiv digest: {datetime.now().isoformat()}")
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    papers, errors, attempted, raw_fetched = collect()
+    papers, errors, attempted, raw_fetched, seen = collect()
     report = generate_report(papers, errors, attempted)
 
     output_file = OUTPUT_DIR / f"{datetime.now().strftime('%Y-%m-%d')}-arxiv.md"
+
+    # ── Quality guard (same-day overwrite protection, mirrors policy-tracker).
+    # A run with strictly fewer papers than the existing same-day report is a
+    # network stall / partial fetch — demote it instead of clobbering good data.
+    # A run with MORE papers merges in the new ones (second run same day is a
+    # legitimate top-up: the trend family merges for exactly this reason).
+    if output_file.exists():
+        try:
+            existing = output_file.read_text(encoding="utf-8")
+        except OSError:
+            existing = ""
+        match = re.search(r"^papers_total:\s*(\d+)", existing, re.M)
+        existing_papers = int(match.group(1)) if match else 0
+        this_papers = len(papers)
+        if this_papers < existing_papers:
+            quarantine = OUTPUT_DIR / f"{datetime.now().strftime('%Y-%m-%d')}-arxiv-{datetime.now().strftime('%H%M%S')}-inferior-run.md"
+            quarantine.write_text(report, encoding="utf-8")
+            status = classify_status(this_papers, raw_fetched, attempted, len(errors))
+            write_health(
+                "arxiv-digest",
+                {
+                    "papers_total": this_papers,
+                    "papers_high_priority": sum(1 for p in papers if p["score"] >= 6),
+                    "categories_attempted": attempted,
+                    "categories_failed": len(errors),
+                    "raw_entries_fetched": raw_fetched,
+                    "errors": errors,
+                    "output": str(quarantine),
+                    "status": status,
+                    "note": f"run demoted: {this_papers} papers < existing {existing_papers}; same-day report left intact",
+                },
+            )
+            log_file = LOG_DIR / "arxiv-digest.log"
+            with open(log_file, "a") as f:
+                f.write(f"{datetime.now().isoformat()} | papers={this_papers} high={sum(1 for p in papers if p['score'] >= 6)} status={status} | DEMOTED (existing report kept: {existing_papers} papers)\n")
+            print(f"⚠️  Inferior rerun demoted to {quarantine.name} — same-day report ({existing_papers} papers) left intact")
+            return
+        if this_papers > existing_papers and existing_papers >= 0:
+            # Merge: keep the existing body's sections, append this run's new
+            # items per section, refresh the frontmatter totals.
+            from hermes_trend_save import merge_bodies
+            old_body = re.sub(r"\A---\n.*?\n---\n", "", existing, flags=re.S)
+            new_body = re.sub(r"\A---\n.*?\n---\n", "", report, flags=re.S)
+            merged = merge_bodies(old_body.strip(), new_body.strip())
+            fm = frontmatter_block(
+                title=f"arXiv Digest — {datetime.now().strftime('%Y-%m-%d')}",
+                tags=["raw", "research", "arxiv", "intelligence", "daily-scan"],
+                extra={
+                    "sources": "arXiv API (cs.LG, cs.AI, cs.CL, cs.RO)",
+                    # papers_total = captured across both same-day runs (the body
+                    # deliberately omits low scorers — don't count headings).
+                    "papers_total": existing_papers + this_papers,
+                    "papers_high_priority": sum(1 for p in papers if p["score"] >= 6),
+                    "categories_failed": len(errors),
+                },
+            )
+            report = fm + "\n" + merged
+            print(f"🔁 Merged same-day rerun: existing {existing_papers} + this {this_papers} papers")
+
     output_file.write_text(report)
+    seen.save()  # only after the report is on disk
 
     high = sum(1 for p in papers if p["score"] >= 6)
     status = classify_status(len(papers), raw_fetched, attempted, len(errors))

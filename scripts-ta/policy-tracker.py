@@ -295,6 +295,44 @@ def main():
     report = generate_report(institutional, news)
 
     output_file = OUTPUT_DIR / f"{datetime.now().strftime('%Y-%m-%d')}-policy-tracker.md"
+
+    # ── Quality guard: never let a weaker run overwrite a stronger same-day report.
+    # (On 2026-10-10 an 08:54 rerun captured 0 items after a network stall and
+    # clobbered the 08:44 report that had captured 21. All-feeds-failed runs must
+    # not destroy good data. The trend family avoids this via hermes_trend_save's
+    # merge; this job's format isn't mergeable, so demote instead.)
+    if output_file.exists():
+        try:
+            existing = output_file.read_text(encoding="utf-8")
+        except OSError:
+            existing = ""
+        match = re.search(r"^items_captured:\s*(\d+)", existing, re.M)
+        existing_items = int(match.group(1)) if match else 0
+        this_items = sum(len(v) for v in institutional.values()) + sum(len(v) for v in news.values())
+        if this_items < existing_items:
+            quarantine = OUTPUT_DIR / f"{datetime.now().strftime('%Y-%m-%d')}-policy-tracker-{datetime.now().strftime('%H%M%S')}-inferior-run.md"
+            quarantine.write_text(report, encoding="utf-8")
+            status = classify_status(this_items, RAW_FETCHED, len(FEEDS_ATTEMPTED), len(FEED_ERRORS))
+            write_health(
+                "policy-tracker",
+                {
+                    "items_captured": this_items,
+                    "feeds_attempted": len(FEEDS_ATTEMPTED),
+                    "feeds_failed": len(FEED_ERRORS),
+                    "raw_entries_fetched": RAW_FETCHED,
+                    "errors": FEED_ERRORS,
+                    "output": str(quarantine),
+                    "status": status,
+                    "note": f"run demoted: {this_items} items < existing {existing_items}; same-day report left intact",
+                },
+            )
+            log_dir = Path(os.path.expanduser("~/.hermes/logs"))
+            log_dir.mkdir(parents=True, exist_ok=True)
+            with open(log_dir / "policy-tracker.log", "a") as f:
+                f.write(f"{datetime.now().isoformat()} | items={this_items} feeds={len(FEEDS_ATTEMPTED)} failed={len(FEED_ERRORS)} status={status} | DEMOTED (existing report kept: {existing_items} items)\n")
+            print(f"⚠️  Inferior rerun demoted to {quarantine.name} — same-day report ({existing_items} items) left intact")
+            return
+
     output_file.write_text(report)
     seen.save()  # only after the report is on disk
 

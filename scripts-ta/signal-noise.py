@@ -340,6 +340,9 @@ def generate_report(items: List[Dict[str, Any]], files: List[Path]) -> Tuple[str
         status="shipped",
         extra={
             "distilled": "false",
+            # Weekly digest of raw captures; consumed by next week's run +
+            # loop-tuner. Excluded from distillation backlogs on this key.
+            "recurring": "weekly",
             "sources": "Knowledge/00-Raw weekly captures",
             "items_scored": len(items),
             "signal_count": len(signal),
@@ -461,7 +464,7 @@ def write_promotion_digest(signal: List[Dict[str, Any]]) -> Path:
         tags=["report", "promotion", "intelligence"],
         stage="report",
         status="draft",
-        extra={"distilled": "false", "promoted_items": len(signal)},
+        extra={"distilled": "false", "recurring": "weekly", "promoted_items": len(signal)},
     )
     body = fm + f"\n# ⬆️ Promoted Signals — {iso_year} Week {iso_week:02d}\n\n"
     body += "Auto-drafted from the signal tier. Edit freely; sources stay in 00-Raw.\n\n"

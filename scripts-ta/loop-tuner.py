@@ -175,6 +175,9 @@ def build_report(week_label, recs, kpis, latest_sn, latest_bias) -> str:
         status="shipped",
         extra={
             "distilled": "false",
+            # Weekly self-improvement report; its insights ARE the tuning
+            # (loop-tuning.json). Excluded from distillation backlogs on this key.
+            "recurring": "weekly",
             "auto_changes": len(recs["auto"]),
             "recommendations": len(recs["recommend"]),
             "signal_ratio_pct": kpis.get("signal_ratio_pct"),

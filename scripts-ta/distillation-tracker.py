@@ -32,10 +32,18 @@ def parse_frontmatter(content: str) -> dict:
     return fm
 
 def scan_reports() -> tuple:
-    """Scan 20-Reports for shipped reports, categorized by distilled status."""
+    """Scan 20-Reports for shipped reports, categorized by distilled status.
+    
+    Recurring series (daily briefs, weekly signal-noise / loop-improvement /
+    bias-balance, marked `recurring: daily|weekly` in frontmatter) are excluded
+    from the pending count: they are consumed by their own downstream loops
+    (loop-tuner digests them weekly), so requiring distilled:true on each one
+    produced a permanent RED alert that meant nothing.
+    """
     reports_dir = VAULT_PATH / "Knowledge" / "20-Reports"
     distilled = []
     not_distilled = []
+    recurring_count = 0
     
     if not reports_dir.exists():
         return distilled, not_distilled
@@ -56,6 +64,11 @@ def scan_reports() -> tuple:
         if status != 'shipped':
             continue
         
+        # Recurring series are loop-consumed, not distillation targets.
+        if str(fm.get('recurring', '')).lower() in ('daily', 'weekly', 'n/a'):
+            recurring_count += 1
+            continue
+        
         report_data = {
             'name': md_file.stem,
             'created': fm.get('created', 'unknown'),
@@ -69,11 +82,11 @@ def scan_reports() -> tuple:
         else:
             not_distilled.append(report_data)
     
-    return distilled, not_distilled
+    return distilled, not_distilled, recurring_count
 
 def generate_dashboard() -> str:
     """Generate the distillation tracker dashboard."""
-    distilled, not_distilled = scan_reports()
+    distilled, not_distilled, recurring_count = scan_reports()
     
     total_shipped = len(distilled) + len(not_distilled)
     distilled_count = len(distilled)
@@ -143,9 +156,10 @@ tags: [flywheel, distillation, tracker, system]
 
 | Metric | Value |
 |--------|-------|
-| Total shipped reports | """ + str(total_shipped) + """ |
+| Total shipped reports (one-off) | """ + str(total_shipped) + """ |
 | Distilled | """ + str(distilled_count) + """ (""" + str(int(distilled_pct)) + """%) |
 | Not distilled | """ + str(not_distilled_count) + """ (""" + str(int(100-distilled_pct)) + """%) |
+| Recurring series (excluded — loop-consumed) | """ + str(recurring_count) + """ |
 | Loop closure rate | """ + str(int(distilled_pct)) + """% |
 
 ---
@@ -194,7 +208,7 @@ tags: [flywheel, distillation, tracker, system]
 
 def main():
     """Main entry point."""
-    distilled, not_distilled = scan_reports()
+    distilled, not_distilled, recurring_count = scan_reports()
     not_distilled_count = len(not_distilled)
     
     # Generate and write dashboard
@@ -210,9 +224,10 @@ def main():
     
     # Print status
     print("Distillation tracker update: " + str(DASHBOARD_FILE))
-    print("  - Shipped reports: " + str(len(distilled) + not_distilled_count))
+    print("  - Shipped one-off reports: " + str(len(distilled) + not_distilled_count))
     print("  - Distilled: " + str(len(distilled)))
     print("  - Not distilled: " + str(not_distilled_count))
+    print("  - Recurring series excluded: " + str(recurring_count))
     
     # Alert if threshold exceeded
     if not_distilled_count > 3:
@@ -228,7 +243,7 @@ def main():
     os.makedirs(log_dir, exist_ok=True)
     log_file = os.path.join(log_dir, "distillation-tracker.log")
     with open(log_file, "a") as f:
-        f.write(f"{datetime.now().isoformat()} | shipped={len(distilled) + not_distilled_count} distilled={len(distilled)} pending={not_distilled_count}\n")
+        f.write(f"{datetime.now().isoformat()} | shipped={len(distilled) + not_distilled_count} distilled={len(distilled)} pending={not_distilled_count} recurring_excluded={recurring_count}\n")
 
 if __name__ == "__main__":
     main()
