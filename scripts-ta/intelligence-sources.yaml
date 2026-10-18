@@ -1,0 +1,192 @@
+# Intelligence Sources Configuration
+# Used by market-trends-*.py and daily-insights-publish.py
+
+# ── Thought Leaders (RSS/Atom feeds, Substack, Twitter via Nitter) ──
+thought_leaders:
+  ai_technology:
+    - name: "Yann LeCun"
+      feed: "https://www.facebook.com/yann.lecun/rss"
+      perspective: "pro-open-source, skeptical-AGI-doom"
+    - name: "Andrew Ng"
+      feed: "https://www.deeplearning.ai/feed/"
+      perspective: "pragmatic-adoption"
+    - name: "Gary Marcus"
+      feed: "https://garymarcus.substack.com/feed"
+      perspective: "skeptic"
+    - name: "Sam Altman"
+      feed: "https://blog.samaltman.com/rss"
+      perspective: "agi-acceleration"
+    - name: "Dario Amodei"
+      feed: "https://www.anthropic.com/rss"
+      perspective: "safety-first"
+    - name: "Timnit Gebru"
+      feed: "https://www.dair-institute.org/feed"
+      perspective: "ai-ethics"
+    - name: "Intuition Machine"
+      feed: "https://medium.com/feed/intuitionmachine"
+      perspective: "agentic-ai, graph-engineering"
+    - name: "Peter Steinberger"
+      feed: "https://steipete.me/rss.xml"
+      perspective: "graph-engineering, agentic-ai"
+      note: "X: @steipete. Site redirects from steipete.com to steipete.me"
+
+  business_strategy:
+    - name: "Ben Horowitz"
+      feed: "https://a16z.com/feed/"
+      perspective: "startup-scaling"
+    - name: "Naval Ravikant"
+      feed: "https://nav.al/rss"
+      perspective: "leverage-wealth"
+    - name: "Ben Thompson"
+      feed: "https://stratechery.com/feed/"
+      perspective: "tech-strategy"
+    - name: "Elad Gil"
+      feed: "https://blog.eladgil.com/feed"
+      perspective: "startup-advice"
+
+  economics_policy:
+    - name: "Paul Krugman"
+      feed: "https://krugman.blogs.nytimes.com/feed/"
+      perspective: "progressive-economics"
+    - name: "Tyler Cowen"
+      feed: "https://marginalrevolution.com/marginalrevolution/index.xml"
+      perspective: "market-optimism"
+    - name: "Ray Dalio"
+      feed: "https://www.linkedin.com/in/ray-dalio/rss"
+      perspective: "macro-investing"
+
+# ── Research Papers ──
+research:
+  arxiv:
+    - category: "cs.LG"
+      feed: "http://arxiv.org/rss/cs.LG"
+    - category: "cs.AI"
+      feed: "http://arxiv.org/rss/cs.AI"
+    - category: "cs.CL"
+      feed: "http://arxiv.org/rss/cs.CL"
+    - category: "cs.CV"
+      feed: "http://arxiv.org/rss/cs.CV"
+    - category: "quant-ph"
+      feed: "http://arxiv.org/rss/quant-ph"
+
+# ── Company Blogs (Primary Sources) ──
+company_blogs:
+  ai_labs:
+    - name: "OpenAI"
+      feed: "https://openai.com/rss"
+    - name: "Anthropic"
+      feed: "https://www.anthropic.com/rss"
+    - name: "Google AI"
+      feed: "https://ai.googleblog.com/feeds/posts/default"
+    - name: "Meta AI"
+      feed: "https://ai.meta.com/blog/rss/"
+    - name: "DeepMind"
+      feed: "https://deepmind.google/discover/blog/rss/"
+    - name: "Microsoft AI"
+      feed: "https://blogs.microsoft.com/ai/feed/"
+    - name: "NVIDIA AI"
+      feed: "https://blogs.nvidia.com/blog/category/artificial-intelligence/feed/"
+
+  tech_companies:
+    - name: "Stripe"
+      feed: "https://stripe.com/blog/feed"
+    - name: "Cloudflare"
+      feed: "https://blog.cloudflare.com/rss/"
+    - name: "Vercel"
+      feed: "https://vercel.com/blog/feed"
+    - name: "Baseten"
+      feed: "https://www.baseten.co/blog/"
+      topic: "ai-infrastructure"
+      note: "Next.js site, no RSS. Scrape sitemap or blog page for new posts."
+
+# ── Newsletters (Substack RSS) ──
+newsletters:
+  - name: "Platformer"
+    feed: "https://platformer.substack.com/feed"
+    topic: "tech-policy"
+  - name: "Import"
+    feed: "https://import.substack.com/feed"
+    topic: "tech-strategy"
+  - name: "Money Stuff"
+    feed: "https://moneystuff.substack.com/feed"
+    topic: "finance"
+  - name: "The Generalist"
+    feed: "https://www.thegeneralist.com/feed"
+    topic: "tech-analysis"
+  - name: "Exponential View"
+    feed: "https://www.exponentialview.co/feed"
+    topic: "ai-society"
+
+# ── Policy & Think Tanks ──
+policy:
+  - name: "Brookings"
+    feed: "https://www.brookings.edu/feed/"
+    topic: "policy"
+  - name: "CSIS"
+    feed: "https://www.csis.org/analysis/rss"
+    topic: "security-policy"
+  - name: "RAND"
+    feed: "https://www.rand.org/blog/rss"
+    topic: "research-policy"
+  - name: "AI Safety Institute"
+    feed: "https://www.gov.uk/government/organisations/ai-safety-institute/announcements.xml"
+    topic: "ai-safety-policy"
+  - name: "Future of Life Institute"
+    feed: "https://futureoflife.org/feed/"
+    topic: "ai-safety"
+
+# ── Aggregators ──
+aggregators:
+  - name: "Hacker News"
+    feed: "https://hnrss.org/frontpage"
+    topic: "tech"
+  - name: "Hacker News AI"
+    feed: "https://hnrss.org/newest?q=artificial+intelligence"
+    topic: "ai"
+  - name: "Reddit ML"
+    feed: "https://www.reddit.com/r/MachineLearning.rss"
+    topic: "ai"
+  - name: "LessWrong"
+    feed: "https://www.lesswrong.com/feed.xml"
+    topic: "ai-safety-rationality"
+  - name: "AI Alignment Forum"
+    feed: "https://www.alignmentforum.org/feed.xml"
+    topic: "ai-safety"
+
+# ── Industry Specific ──
+industry:
+  fintech:
+    - name: "Finextra"
+      feed: "https://www.finextra.com/rss/rss.asp?type=news"
+    - name: "American Banker"
+      feed: "https://www.americanbanker.com/feed"
+  
+  retail:
+    - name: "Retail Dive"
+      feed: "https://www.retaildive.com/feeds/news/"
+    - name: "Modern Retail"
+      feed: "https://www.modernretail.co/feed/"
+  
+  hospitality:
+    - name: "Hotel Management"
+      feed: "https://www.hotelmanagement.net/rss"
+    - name: "Skift"
+      feed: "https://skift.com/feed/"
+  
+  property:
+    - name: "PropertyGuru"
+      feed: "https://www.propertyguru.com.my/property-news/rss"
+    - name: "The Edge Property"
+      feed: "https://www.theedgemarkets.com/rss/property"
+  
+  fnb:
+    - name: "F&B Report"
+      feed: "https://www.fnbreport.com.my/feed/"
+    - name: "Nation's Restaurant News"
+      feed: "https://www.nrn.com/rss"
+
+# ── Google News RSS (existing, keep as fallback) ──
+google_news:
+  enabled: true
+  base_url: "https://news.google.com/rss/search?q={query}&hl=en-US&gl=US&ceid=US:en"
+  max_results: 5

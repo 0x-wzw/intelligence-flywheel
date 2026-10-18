@@ -1,0 +1,32 @@
+# --- secrets: never commit ---
+.env
+*.env
+**/.env
+*token*
+*TOKEN*
+*secret*
+*SECRET*
+*credential*
+
+# --- python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# --- macOS ---
+.DS_Store
+._*
+
+# --- editor ---
+.vscode/
+.idea/
+*.swp
+
+# --- backups & transient ---
+*.bak
+*.bak.*
+*~
+*.orig
+*.tmp

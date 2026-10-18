@@ -1,0 +1,227 @@
+{
+  "_comment": "Tunable knobs for daily-intelligence-loop.py, updated weekly by loop-tuner.py. The daily loop reads this file for synthesis reliability and per-producer item caps. Safe changes are applied automatically; judgment calls are written to the improvement report.",
+  "synthesis": {
+    "max_tokens": 1200,
+    "timeout_seconds": 180,
+    "retries": 4,
+    "min_success_days_before_tighten": 7,
+    "max_fail_days_before_escalate": 2
+  },
+  "items": {
+    "default_max_per_producer": 8,
+    "cap_high_noise_producers": 3,
+    "min_signal_ratio_target": 15.0
+  },
+  "sources": {
+    "_comment": "Auto-disabled noise hosts accumulate here (reversible: remove from this list).",
+    "disabled_noise_hosts": [
+      "marginalrevolution.com",
+      "venturenews.ai"
+    ]
+  },
+  "history": {
+    "_comment": "Rolling weekly KPI history for trend detection.",
+    "weeks": [
+      {
+        "week": "2026-W34",
+        "ts": "2026-08-17T04:15:23.416931",
+        "signal_ratio_pct": 13.4,
+        "diversity_score": 8.1,
+        "loop_synthesis": true,
+        "producers_covered": 9,
+        "auto_changes": 1,
+        "recommendations": 18
+      },
+      {
+        "week": "2026-W34",
+        "ts": "2026-08-17T04:15:43.575420",
+        "signal_ratio_pct": 13.4,
+        "diversity_score": 8.1,
+        "loop_synthesis": true,
+        "producers_covered": 9,
+        "auto_changes": 1,
+        "recommendations": 18
+      },
+      {
+        "week": "2026-W34",
+        "ts": "2026-08-17T04:15:56.350365",
+        "signal_ratio_pct": 13.4,
+        "diversity_score": 8.1,
+        "loop_synthesis": true,
+        "producers_covered": 9,
+        "auto_changes": 0,
+        "recommendations": 18
+      },
+      {
+        "week": "2026-W34",
+        "ts": "2026-08-23T10:15:17.476035",
+        "signal_ratio_pct": 16.6,
+        "diversity_score": 8.2,
+        "loop_synthesis": false,
+        "producers_covered": 11,
+        "auto_changes": 3,
+        "recommendations": 16
+      },
+      {
+        "week": "2026-W35",
+        "ts": "2026-08-30T01:25:41.355987",
+        "signal_ratio_pct": 16.6,
+        "diversity_score": 8.2,
+        "loop_synthesis": false,
+        "producers_covered": 11,
+        "auto_changes": 2,
+        "recommendations": 16
+      },
+      {
+        "week": "2026-W35",
+        "ts": "2026-08-30T10:15:30.964194",
+        "signal_ratio_pct": 16.0,
+        "diversity_score": 8.2,
+        "loop_synthesis": true,
+        "producers_covered": 12,
+        "auto_changes": 1,
+        "recommendations": 17
+      },
+      {
+        "week": "2026-W36",
+        "ts": "2026-09-06T10:15:23.051394",
+        "signal_ratio_pct": 17.5,
+        "diversity_score": 6.1,
+        "loop_synthesis": true,
+        "producers_covered": 10,
+        "auto_changes": 1,
+        "recommendations": 18
+      },
+      {
+        "week": "2026-W37",
+        "ts": "2026-09-13T10:15:15.245060",
+        "signal_ratio_pct": 20.3,
+        "diversity_score": 7.3,
+        "loop_synthesis": true,
+        "producers_covered": 10,
+        "auto_changes": 1,
+        "recommendations": 16
+      },
+      {
+        "week": "2026-W38",
+        "ts": "2026-09-20T10:15:29.687286",
+        "signal_ratio_pct": 16.7,
+        "diversity_score": 8.8,
+        "loop_synthesis": true,
+        "producers_covered": 10,
+        "auto_changes": 1,
+        "recommendations": 15
+      },
+      {
+        "week": "2026-W39",
+        "ts": "2026-09-27T10:15:20.552261",
+        "signal_ratio_pct": 14.8,
+        "diversity_score": 6.7,
+        "loop_synthesis": false,
+        "producers_covered": 10,
+        "auto_changes": 0,
+        "recommendations": 2
+      },
+      {
+        "week": "2026-W40",
+        "ts": "2026-10-04T10:15:37.008469",
+        "signal_ratio_pct": 14.8,
+        "diversity_score": 7.9,
+        "loop_synthesis": true,
+        "producers_covered": 11,
+        "auto_changes": 0,
+        "recommendations": 16
+      },
+      {
+        "week": "2026-W41",
+        "ts": "2026-10-11T10:15:08.578860",
+        "signal_ratio_pct": 8.5,
+        "diversity_score": 8.3,
+        "loop_synthesis": true,
+        "producers_covered": 11,
+        "auto_changes": 0,
+        "recommendations": 1
+      }
+    ]
+  },
+  "applied": {
+    "_comment": "Log of auto-applied changes this tool made.",
+    "changes": [
+      {
+        "week": "2026-W33",
+        "ts": "2026-08-10T16:00:00+08:00",
+        "change": "Backfilled 15 unclassified hosts into bias_taxonomy.py SOURCE_PERSPECTIVES (techcrunch, science.org, retaildive, restofworld, nytimes, dev.to, openalex, notion, crunchbase, newscientist, producthunt, baseten, latent.space, simplecast, libsyn)."
+      },
+      {
+        "week": "2026-W33",
+        "ts": "2026-08-10T16:00:00+08:00",
+        "change": "Added credible sources to close policy gaps: Heritage Foundation (conservative), Lawfare (centrist/national-security) in multi_source_fetcher economics_policy group."
+      },
+      {
+        "week": "2026-W33",
+        "ts": "2026-08-10T16:00:00+08:00",
+        "change": "Noise review: high counts on stratechery/lesswrong/marginalrevolution/garymarcus are curated high-value voices (volume not noise) \u2014 kept. news.google.com/openalex/arxiv are core aggregators \u2014 kept. dev.to/lobsters already excluded from consumer verticals."
+      },
+      {
+        "week": "2026-W33",
+        "change": "Disabled noise-dominant host `marginalrevolution.com` (36 noise items). Reversible: remove from `loop-tuning.json` \u2192 sources.disabled_noise_hosts.",
+        "ts": "2026-08-16T10:15:34.755690"
+      },
+      {
+        "week": "2026-W34",
+        "change": "Disabled noise-dominant host `marginalrevolution.com` (31 noise items). Reversible: remove from `loop-tuning.json` \u2192 sources.disabled_noise_hosts.",
+        "ts": "2026-08-17T04:15:23.416931"
+      },
+      {
+        "week": "2026-W34",
+        "change": "Disabled noise-dominant host `marginalrevolution.com` (31 noise items). Reversible: remove from `loop-tuning.json` \u2192 sources.disabled_noise_hosts.",
+        "ts": "2026-08-17T04:15:43.575420"
+      },
+      {
+        "week": "2026-W34",
+        "change": "Disabled noise-dominant host `venturenews.ai` (65 noise items). Reversible: remove from `loop-tuning.json` \u2192 sources.disabled_noise_hosts.",
+        "ts": "2026-08-23T10:15:17.476035"
+      },
+      {
+        "week": "2026-W34",
+        "change": "Signal ratio 16.6% is healthy (\u226515.0%). No curation tightening.",
+        "ts": "2026-08-23T10:15:17.476035"
+      },
+      {
+        "week": "2026-W34",
+        "change": "Last loop run had no synthesis \u2014 bumped retries 2\u21923.",
+        "ts": "2026-08-23T10:15:17.476035"
+      },
+      {
+        "week": "2026-W35",
+        "change": "Signal ratio 16.6% is healthy (\u226515.0%). No curation tightening.",
+        "ts": "2026-08-30T01:25:41.355987"
+      },
+      {
+        "week": "2026-W35",
+        "change": "Last loop run had no synthesis \u2014 bumped retries 3\u21924.",
+        "ts": "2026-08-30T01:25:41.355987"
+      },
+      {
+        "week": "2026-W35",
+        "change": "Signal ratio 16.0% is healthy (\u226515.0%). No curation tightening.",
+        "ts": "2026-08-30T10:15:30.964194"
+      },
+      {
+        "week": "2026-W36",
+        "change": "Signal ratio 17.5% is healthy (\u226515.0%). No curation tightening.",
+        "ts": "2026-09-06T10:15:23.051394"
+      },
+      {
+        "week": "2026-W37",
+        "change": "Signal ratio 20.3% is healthy (\u226515.0%). No curation tightening.",
+        "ts": "2026-09-13T10:15:15.245060"
+      },
+      {
+        "week": "2026-W38",
+        "change": "Signal ratio 16.7% is healthy (\u226515.0%). No curation tightening.",
+        "ts": "2026-09-20T10:15:29.687286"
+      }
+    ]
+  }
+}

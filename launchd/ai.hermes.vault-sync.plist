@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>ai.hermes.vault-sync</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/python3</string>
+        <string>/Users/admin/.hermes/scripts/vault-sync.py</string>
+        <string>--vault-path</string>
+        <string>/Users/admin/Documents/Obsidian Vault</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>/Users/admin/.hermes</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>OBSIDIAN_VAULT_PATH</key>
+        <string>/Users/admin/Documents/Obsidian Vault</string>
+        <key>PATH</key>
+        <string>/usr/local/bin:/usr/bin:/bin:/Users/admin/Library/Python/3.9/bin</string>
+    </dict>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>/Users/admin/.hermes/logs/vault-sync-stdout.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/admin/.hermes/logs/vault-sync-stderr.log</string>
+</dict>
+</plist>

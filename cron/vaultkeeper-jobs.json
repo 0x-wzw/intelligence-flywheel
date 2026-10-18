@@ -1,0 +1,173 @@
+{
+  "jobs": [
+    {
+      "id": "67becf3e01c0",
+      "name": "[bot:vaultkeeper] vault-learn",
+      "prompt": "You are the vault agent. Daily vault learning + consolidation task:\n1. Run the vault daily script: python3 ~/.hermes/scripts/vault-daily.py (or the copy in this profile scripts dir) and review its output.\n2. Scan Daily/ notes from today and the past 2 days in /Users/admin/Documents/Obsidian Vault; extract durable facts, decisions, project states, and action items.\n3. Update this profile's MEMORY.md (memories/) with what changed today — new facts, status changes, completed items. Keep entries concise and dated. Do not duplicate existing entries.\n4. Check System/schema-lint-health.json if present; flag any schema regressions >1%.\n5. End your reply with a brief \"Learned today:\" summary (3-6 bullets) so continuity chains your learning day over day.",
+      "skills": [
+        "obsidian-vault",
+        "vault-search"
+      ],
+      "skill": "obsidian-vault",
+      "model": null,
+      "provider": null,
+      "provider_snapshot": null,
+      "model_snapshot": null,
+      "base_url": null,
+      "script": "vault-learn.py",
+      "no_agent": true,
+      "monitor_script": null,
+      "monitor_url": null,
+      "monitor_state": null,
+      "context_from": [
+        "self"
+      ],
+      "schedule": {
+        "kind": "cron",
+        "expr": "30 0 * * *",
+        "display": "30 0 * * *"
+      },
+      "schedule_display": "30 0 * * *",
+      "repeat": {
+        "times": null,
+        "completed": 35
+      },
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "created_at": "2026-09-17T00:10:03.050457+08:00",
+      "next_run_at": "2026-10-19T00:30:00+08:00",
+      "last_run_at": "2026-10-18T00:30:31.685655+08:00",
+      "last_status": "ok",
+      "last_error": null,
+      "last_delivery_error": null,
+      "last_delivery_unverified": null,
+      "failure_streak": 0,
+      "deliver": "feishu:oc_7c8a767be1a24992058c4ceed10cd09d",
+      "origin": null,
+      "enabled_toolsets": null,
+      "workdir": "/Users/admin/Documents/Obsidian Vault",
+      "fire_claim": null,
+      "last_dispatch": {
+        "scheduled_at": "2026-10-18T00:30:00+08:00",
+        "dispatched_at": "2026-10-18T00:30:29.308517+08:00",
+        "lateness_seconds": 29.3,
+        "kind": "on_time"
+      },
+      "failure_deliver": "feishu:oc_7c8a767be1a24992058c4ceed10cd09d"
+    },
+    {
+      "id": "e90b4ea2066a",
+      "name": "[bot:vaultkeeper] goal-tick",
+      "prompt": "",
+      "skills": [],
+      "skill": null,
+      "model": null,
+      "provider": null,
+      "provider_snapshot": null,
+      "model_snapshot": null,
+      "base_url": null,
+      "script": "goal-ticker.py",
+      "no_agent": true,
+      "monitor_script": null,
+      "monitor_url": null,
+      "monitor_state": null,
+      "context_from": null,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 * * * *",
+        "display": "0 * * * *"
+      },
+      "schedule_display": "0 * * * *",
+      "repeat": {
+        "times": null,
+        "completed": 742
+      },
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "created_at": "2026-09-17T10:15:42.659894+08:00",
+      "next_run_at": "2026-10-18T10:00:00+08:00",
+      "last_run_at": "2026-10-18T09:00:35.773556+08:00",
+      "last_status": "ok",
+      "last_error": null,
+      "last_delivery_error": null,
+      "last_delivery_unverified": null,
+      "failure_streak": 0,
+      "deliver": "bot-chat:vaultkeeper",
+      "origin": null,
+      "enabled_toolsets": null,
+      "workdir": null,
+      "last_dispatch": {
+        "scheduled_at": "2026-10-18T09:00:00+08:00",
+        "dispatched_at": "2026-10-18T09:00:34.856591+08:00",
+        "lateness_seconds": 34.9,
+        "kind": "on_time"
+      },
+      "fire_claim": null,
+      "last_failure": {
+        "at": "2026-10-06T16:01:00.596714+08:00",
+        "detail": "Script exited with code -9"
+      }
+    },
+    {
+      "id": "c5ca0518f773",
+      "name": "[bot:vaultkeeper] vault-weekly-brief",
+      "prompt": "You are the vaultkeeper analyst. Produce the WEEKLY VAULT BRIEF. You are the NARRATOR, not the calculator: every number you publish must be copied VERBATIM from a file you read in THIS run. Never round, recompute, subtract, or qualify a figure as \"approximately\".\n\nSTEP 1 - read these files first (use read_file; vault root: /Users/admin/Documents/Obsidian Vault):\n- System/schema-delta.json  <- THE metric source of record, pre-computed by schema-weekly-check.py. For every schema metric, copy its current/previous/delta values exactly as written. Do NOT read schema-lint-health.json or derive schema numbers from anything else.\n- System/schema-trend.log   <- weekly compliance series (context only; on any conflict the delta file wins)\n- /Users/admin/Documents/Obsidian Vault/System/vault-health.json (narrative status only)\n- newest file matching: /Users/admin/Documents/Obsidian Vault/System/_generated/flywheel-health-*.md\n- /Users/admin/.hermes/profiles/vaultkeeper/memories/MEMORY.md (just the most recent VAULT-LEARN sections)\n\nSTEP 2 - write the brief (markdown, 200-400 words) with sections:\n- Schema health: quote compliance_pct and compliance_pct_previous straight from schema-delta.json, and copy the current/previous/delta triples for total_files and compliant exactly. If a previous value is null (first measured run), write \"first measured run - no prior comparison\" instead of inventing one. Reuse the verdict from the newest schema-trend.log line verbatim.\n- Vault activity: narrative from MEMORY.md + vault-health.json (what happened, dated - no arithmetic)\n- Flywheel: unprocessed backlog trend as described in the flywheel health file; quote any count verbatim and name its source file\n- Risks & one concrete recommended action for next week\n\nSTEP 3 - save it with write_file as Knowledge/20-Reports/Vault-Weekly-Brief-YYYY-MM-DD.md (today's date) with frontmatter: type: report, created: today, domain: knowledge, status: shipped - plus wikilinks to the cited System/ files.\n\nSTEP 4 - reply with ONLY a 3-bullet TL;DR of the brief (this goes to Feishu).\n\nHard rules: schema metrics come ONLY from schema-delta.json, quoted verbatim and attributed as \"per schema-delta.json\". Numbers from other files must likewise be verbatim quotes with attribution - never computed. If schema-delta.json is missing or unreadable, state that in the brief and publish NO schema numbers rather than substituting another source. No tool calls = failed run.",
+      "skills": [
+        "obsidian-vault",
+        "vault-schema-v2"
+      ],
+      "skill": "obsidian-vault",
+      "model": null,
+      "provider": null,
+      "base_url": null,
+      "script": null,
+      "no_agent": false,
+      "monitor_script": null,
+      "monitor_url": null,
+      "monitor_state": null,
+      "context_from": null,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 10 * * 1",
+        "display": "0 10 * * 1"
+      },
+      "schedule_display": "0 10 * * 1",
+      "repeat": {
+        "times": null,
+        "completed": 5
+      },
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "created_at": "2026-10-01T08:14:57.534086+08:00",
+      "next_run_at": "2026-10-19T10:00:00+08:00",
+      "last_run_at": "2026-10-12T10:00:20.012200+08:00",
+      "last_status": "error",
+      "last_error": "ProviderNotConfiguredError: No LLM provider configured. Run `hermes model` to select a provider, or run `hermes setup` for first-time configuration.",
+      "last_delivery_error": null,
+      "last_delivery_unverified": null,
+      "failure_streak": 1,
+      "deliver": "feishu:oc_7c8a767be1a24992058c4ceed10cd09d",
+      "origin": null,
+      "enabled_toolsets": null,
+      "workdir": "/Users/admin/Documents/Obsidian Vault",
+      "fire_claim": null,
+      "last_dispatch": {
+        "scheduled_at": "2026-10-12T10:00:00+08:00",
+        "dispatched_at": "2026-10-12T10:00:15.432976+08:00",
+        "lateness_seconds": 15.4,
+        "kind": "on_time"
+      },
+      "last_failure": {
+        "at": "2026-10-12T10:00:20.012200+08:00",
+        "detail": "ProviderNotConfiguredError: No LLM provider configured. Run `hermes model` to select a provider, or run `hermes setup` for first-time configuration."
+      }
+    }
+  ],
+  "updated_at": "2026-10-18T09:00:35.777085+08:00"
+}
