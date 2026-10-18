@@ -1,6 +1,6 @@
-# Hermes Intelligence Flywheel
+# Intelligence Flywheel
 
-The daily intelligence pipeline for the Hermes agent: ~43 scheduled producers,
+The daily intelligence pipeline: ~43 scheduled producers,
 processors, and maintainers that turn web sources into vault captures, daily
 briefs, and published intelligence — plus the vaultkeeper jobs that keep the
 knowledge base healthy.
@@ -21,7 +21,7 @@ the live copies consistent is defined in the companion repo
 ## Repository Layout
 
 ```
-hermes-intelligence-flywheel/
+intelligence-flywheel/
 ├── scripts-ta/                     Transformation-architect profile scripts (the flywheel)
 │   ├── market-trends*.py           6 vertical producers (fashion, fnb, hospitality,
 │   │                               property/infra/energy, csuite, ai-science)
@@ -245,7 +245,7 @@ session.
    (profile copies are what the registries execute).
 3. Mirror to `~/.hermes/scripts/` only if global invocations are used
    (launchd `vault-sync.py` reads from there).
-4. Load registries via the Hermes cron system (`hermes cron` / jobs.json import);
+4. Load registries via the cron system (`hermes cron` / jobs.json import);
    verify with `cron-health-digest.py` and one manual
    `intelligence-publish.py <today>` idempotency check.
 5. Install `launchd/ai.hermes.vault-sync.plist` → `~/Library/LaunchAgents/` and
